@@ -154,4 +154,15 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
+  <UsingTask TaskName="HashingMSBuild.RewindTimestamps" AssemblyFile="..\RewindTimestampsTask\bin\Debug\RewindTimestampsTask.dll" />
+  <PropertyGroup>
+    <BuildDependsOn>
+      RewindTimestamps;
+      $(BuildDependsOn);
+    </BuildDependsOn>
+  </PropertyGroup>
+  <Target Name="RewindTimestamps">
+    <Message Text="Running RewindTimestamps..." Importance="high" />
+    <RewindTimestamps SourceFiles="@(ClInclude);@(ClCompile)" />
+  </Target>
 </Project>
