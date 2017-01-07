@@ -29,7 +29,7 @@ namespace HashingMSBuild
         {
             var currentSourceFiles = SourceFiles.ToDictionary(item => item.ItemSpec, item => File.GetLastWriteTime(item.ItemSpec));
             ProcessSourceFiles(currentSourceFiles);
-            
+
             return true;
         }
 
@@ -40,7 +40,7 @@ namespace HashingMSBuild
 
             using (var db = new LiteDatabase(databaseFile))
             {
-                var storedFiles = db.GetCollection<SourceFileRecord>("files");                          
+                var storedFiles = db.GetCollection<SourceFileRecord>("files");
 
                 Log.LogMessage(MessageImportance.High, $"Checking for updated time stamps...");
                 foreach (var record in storedFiles.FindAll())
@@ -49,65 +49,79 @@ namespace HashingMSBuild
                     {
                         Log.LogMessage(MessageImportance.High, $"Deleting the record associated with a no longer existing file {record.File}");
                         storedFiles.Delete(record.Id);
+                        continue;
                     }
 
-                    Log.LogMessage(MessageImportance.High, "Source file: {0}", record.File);
-                    Log.LogMessage(MessageImportance.High, " ** Last write time [recorded]: {0}", record.LastWriteTime);
+                    bool recordUpdated = CheckFileTimestamp(currentSourceFiles[record.File], record);
+                    if (recordUpdated)
+                    {
+                        storedFiles.Update(record);
+                    }
 
-                    var currentTimestamp = currentSourceFiles[record.File].ToFileTimeUtc();
                     currentSourceFiles.Remove(record.File);
-                    Log.LogMessage(MessageImportance.High, " ** Last write time [current]: {0}", currentTimestamp);
-                    Log.LogMessage(MessageImportance.High, " ** xxHash (XXH64) [recorded]: {0}", Convert.ToBase64String(record.Hash));
-
-                    if (currentTimestamp > record.LastWriteTime)
-                    {
-                        var currentHash = ComputeHash(record.File);
-                        Log.LogMessage(MessageImportance.High, " ** xxHash (XXH64) [current]: {0}", Convert.ToBase64String(currentHash));
-
-                        bool hashChanged = false;
-
-                        for (int i = 0; i < currentHash.Length; i++)
-                        {
-                            if (currentHash[i] != record.Hash[i])
-                            {
-                                hashChanged = true;
-                                break;
-                            }
-                        }
-
-                        if (hashChanged)
-                        {
-                            Log.LogMessage(MessageImportance.High, " ** Hash value changed. Updating the record.");
-                            record.Hash = currentHash;
-                            record.LastWriteTime = currentTimestamp;
-                            storedFiles.Update(record);
-                        }
-                        else
-                        {
-                            Log.LogMessage(MessageImportance.High, " ** Hash value not changed. Rewinding last write time.");
-                            File.SetLastWriteTime(record.File, DateTime.FromFileTimeUtc(record.LastWriteTime));                            
-                        }
-                    }
-                    else
-                    {
-                        Log.LogMessage(MessageImportance.High, " ** Last write time not changed. Skipping.");
-                    }
                 }
 
-                int count = storedFiles.Insert(from entry in currentSourceFiles
-                                   let newFile = entry.Key
-                                   let newFileTimestamp = entry.Value.ToFileTimeUtc()
-                                   select new SourceFileRecord
-                                   {
-                                       File = newFile,
-                                       LastWriteTime = newFileTimestamp,
-                                       Hash = ComputeHash(newFile)
-                                   });
+                AddNewFileRecords(currentSourceFiles, storedFiles);
+            }
+        }
 
-                if (count > 0)
+        private bool CheckFileTimestamp(DateTime currentTimestamp, SourceFileRecord record)
+        {
+            Log.LogMessage(MessageImportance.High, "Source file: {0}", record.File);
+            Log.LogMessage(MessageImportance.High, " ** Last write time [recorded]: {0}", record.LastWriteTime);
+            Log.LogMessage(MessageImportance.High, " ** Last write time [current]: {0}", currentTimestamp.ToFileTimeUtc());
+            Log.LogMessage(MessageImportance.High, " ** xxHash (XXH64) [recorded]: {0}", Convert.ToBase64String(record.Hash));
+
+            if (currentTimestamp.ToFileTimeUtc() > record.LastWriteTime)
+            {
+                Log.LogMessage(MessageImportance.High, " ** Last write time not changed. Skipping.");
+                return false;
+            }
+
+            var currentHash = ComputeHash(record.File);
+            Log.LogMessage(MessageImportance.High, " ** xxHash (XXH64) [current]: {0}", Convert.ToBase64String(currentHash));
+
+            bool hashChanged = false;
+
+            for (int i = 0; i < currentHash.Length; i++)
+            {
+                if (currentHash[i] != record.Hash[i])
                 {
-                    Log.LogMessage(MessageImportance.High, $"Added {count} new file record(s).");
+                    hashChanged = true;
+                    break;
                 }
+            }
+
+            if (hashChanged)
+            {
+                Log.LogMessage(MessageImportance.High, " ** Hash value changed. Updating the record.");
+                record.Hash = currentHash;
+                record.LastWriteTime = currentTimestamp.ToFileTimeUtc();
+                return true;
+            }
+            else
+            {
+                Log.LogMessage(MessageImportance.High, " ** Hash value not changed. Rewinding last write time.");
+                File.SetLastWriteTime(record.File, DateTime.FromFileTimeUtc(record.LastWriteTime));
+                return false;
+            }
+        }
+
+        private void AddNewFileRecords(Dictionary<string, DateTime> newSourceFiles, LiteCollection<SourceFileRecord> storedFiles)
+        {
+            int count = storedFiles.Insert(from entry in newSourceFiles
+                                           let newFile = entry.Key
+                                           let newFileTimestamp = entry.Value.ToFileTimeUtc()
+                                           select new SourceFileRecord
+                                           {
+                                               File = newFile,
+                                               LastWriteTime = newFileTimestamp,
+                                               Hash = ComputeHash(newFile)
+                                           });
+
+            if (count > 0)
+            {
+                Log.LogMessage(MessageImportance.High, $"Added {count} new file record(s).");
             }
         }
 
