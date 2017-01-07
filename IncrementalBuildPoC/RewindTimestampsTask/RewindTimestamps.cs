@@ -1,11 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.Build.Utilities;
+﻿using LiteDB;
 using Microsoft.Build.Framework;
-using System.IO;
-using LiteDB;
+using Microsoft.Build.Utilities;
+using System;
+using System.Collections.Generic;
 using System.Data.HashFunction;
+using System.IO;
+using System.Linq;
 
 namespace HashingMSBuild
 {
@@ -19,15 +19,15 @@ namespace HashingMSBuild
 
             public int Id { get; set; }
             public string File { get; set; }
-            public long LastWriteTime { get; set; }
-            public byte[] Hash { get; set; }
+            public long LastWriteTimeUtc { get; set; }
+            public long Hash { get; set; }
         }
 
-        private xxHash hasher = new xxHash();
+        private xxHash hasher = new xxHash(hashSize: 64);
 
         public override bool Execute()
         {
-            var currentSourceFiles = SourceFiles.ToDictionary(item => item.ItemSpec, item => File.GetLastWriteTime(item.ItemSpec));
+            var currentSourceFiles = SourceFiles.ToDictionary(item => item.ItemSpec, item => File.GetLastWriteTimeUtc(item.ItemSpec));
             ProcessSourceFiles(currentSourceFiles);
 
             return true;
@@ -42,7 +42,7 @@ namespace HashingMSBuild
             {
                 var storedFiles = db.GetCollection<SourceFileRecord>("files");
 
-                Log.LogMessage(MessageImportance.High, $"Checking for updated time stamps...");
+                Log.LogMessage(MessageImportance.High, $"Looking for updated time stamps...");
                 foreach (var record in storedFiles.FindAll())
                 {
                     if (!currentSourceFiles.ContainsKey(record.File))
@@ -65,44 +65,34 @@ namespace HashingMSBuild
             }
         }
 
-        private bool CheckFileTimestamp(DateTime currentTimestamp, SourceFileRecord record)
+        private bool CheckFileTimestamp(DateTime currentTimestampUtc, SourceFileRecord record)
         {
             Log.LogMessage(MessageImportance.High, "Source file: {0}", record.File);
-            Log.LogMessage(MessageImportance.High, " ** Last write time [recorded]: {0}", record.LastWriteTime);
-            Log.LogMessage(MessageImportance.High, " ** Last write time [current]: {0}", currentTimestamp.ToFileTimeUtc());
-            Log.LogMessage(MessageImportance.High, " ** xxHash (XXH64) [recorded]: {0}", Convert.ToBase64String(record.Hash));
+            Log.LogMessage(MessageImportance.High, string.Format(" ** Last write time [recorded]: {0:O}", DateTime.FromFileTime(record.LastWriteTimeUtc)));
+            Log.LogMessage(MessageImportance.High, string.Format(" ** Last write time [current]: {0:O}", currentTimestampUtc.ToLocalTime()));
+            Log.LogMessage(MessageImportance.High, string.Format(" ** xxHash (XXH64) [recorded]: {0:X8}", record.Hash));
 
-            if (currentTimestamp.ToFileTimeUtc() > record.LastWriteTime)
+            long currentLastWriteTimeUtc = currentTimestampUtc.ToFileTime();
+            if (record.LastWriteTimeUtc >= currentLastWriteTimeUtc)
             {
                 Log.LogMessage(MessageImportance.High, " ** Last write time not changed. Skipping.");
                 return false;
             }
 
             var currentHash = ComputeHash(record.File);
-            Log.LogMessage(MessageImportance.High, " ** xxHash (XXH64) [current]: {0}", Convert.ToBase64String(currentHash));
+            Log.LogMessage(MessageImportance.High, string.Format(" ** xxHash (XXH64) [current]: {0:X8}", currentHash));            
 
-            bool hashChanged = false;
-
-            for (int i = 0; i < currentHash.Length; i++)
-            {
-                if (currentHash[i] != record.Hash[i])
-                {
-                    hashChanged = true;
-                    break;
-                }
-            }
-
-            if (hashChanged)
+            if (currentHash != record.Hash)
             {
                 Log.LogMessage(MessageImportance.High, " ** Hash value changed. Updating the record.");
                 record.Hash = currentHash;
-                record.LastWriteTime = currentTimestamp.ToFileTimeUtc();
+                record.LastWriteTimeUtc = currentLastWriteTimeUtc;
                 return true;
             }
             else
             {
                 Log.LogMessage(MessageImportance.High, " ** Hash value not changed. Rewinding last write time.");
-                File.SetLastWriteTime(record.File, DateTime.FromFileTimeUtc(record.LastWriteTime));
+                File.SetLastWriteTimeUtc(record.File, DateTime.FromFileTimeUtc(record.LastWriteTimeUtc));
                 return false;
             }
         }
@@ -115,7 +105,7 @@ namespace HashingMSBuild
                                            select new SourceFileRecord
                                            {
                                                File = newFile,
-                                               LastWriteTime = newFileTimestamp,
+                                               LastWriteTimeUtc = newFileTimestamp,
                                                Hash = ComputeHash(newFile)
                                            });
 
@@ -130,11 +120,12 @@ namespace HashingMSBuild
             return Path.ChangeExtension(BuildEngine.ProjectFileOfTaskNode, "hashdb");
         }
 
-        private byte[] ComputeHash(string file)
+        private long ComputeHash(string file)
         {
             using (var data = File.OpenRead(file))
             {
-                return hasher.ComputeHash(data);
+                byte[] hash = hasher.ComputeHash(data);
+                return BitConverter.ToInt64(hash, 0);
             }
         }
 
