@@ -165,7 +165,6 @@
     </BuildDependsOn>
   </PropertyGroup>
   <Target Name="RewindTimestamps">
-    <Message Text="Running RewindTimestamps..." Importance="high" />
     <RewindTimestamps SourceFiles="@(ClInclude);@(ClCompile)" />
   </Target>
 </Project>

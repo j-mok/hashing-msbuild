@@ -36,18 +36,18 @@ namespace HashingMSBuild
         private void ProcessSourceFiles(Dictionary<string, DateTime> currentSourceFiles)
         {
             string databaseFile = GetDatabasePath();
-            Log.LogMessage(MessageImportance.High, $"Using database {databaseFile}");
+            Log.LogMessage($"Using database {databaseFile}");
 
             using (var db = new LiteDatabase(databaseFile))
             {
                 var storedFiles = db.GetCollection<SourceFileRecord>("files");
 
-                Log.LogMessage(MessageImportance.High, $"Looking for updated time stamps...");
+                Log.LogMessage(MessageImportance.Low, $"Looking for updated time stamps...");
                 foreach (var record in storedFiles.FindAll())
                 {
                     if (!currentSourceFiles.ContainsKey(record.File))
                     {
-                        Log.LogMessage(MessageImportance.High, $"Deleting the record associated with a no longer existing file {record.File}");
+                        Log.LogMessage(MessageImportance.Low, $"Deleting the record associated with a no longer existing file {record.File}");
                         storedFiles.Delete(record.Id);
                         continue;
                     }
@@ -67,31 +67,31 @@ namespace HashingMSBuild
 
         private bool CheckFileTimestamp(DateTime currentTimestampUtc, SourceFileRecord record)
         {
-            Log.LogMessage(MessageImportance.High, "Source file: {0}", record.File);
-            Log.LogMessage(MessageImportance.High, string.Format(" ** Last write time [recorded]: {0:O}", DateTime.FromFileTime(record.LastWriteTimeUtc)));
-            Log.LogMessage(MessageImportance.High, string.Format(" ** Last write time [current]: {0:O}", currentTimestampUtc.ToLocalTime()));
-            Log.LogMessage(MessageImportance.High, string.Format(" ** xxHash (XXH64) [recorded]: {0:X8}", record.Hash));
+            Log.LogMessage(MessageImportance.Normal, "Source file: {0}", record.File);
+            Log.LogMessage(MessageImportance.Low, string.Format(" ** Last write time [recorded]: {0:O}", DateTime.FromFileTime(record.LastWriteTimeUtc)));
+            Log.LogMessage(MessageImportance.Low, string.Format(" ** Last write time [current]: {0:O}", currentTimestampUtc.ToLocalTime()));
+            Log.LogMessage(MessageImportance.Low, string.Format(" ** xxHash (XXH64) [recorded]: {0:X8}", record.Hash));
 
             long currentLastWriteTimeUtc = currentTimestampUtc.ToFileTime();
             if (record.LastWriteTimeUtc >= currentLastWriteTimeUtc)
             {
-                Log.LogMessage(MessageImportance.High, " ** Last write time not changed. Skipping.");
+                Log.LogMessage(MessageImportance.Normal, " ** Last write time not changed. Skipping.");
                 return false;
             }
 
             var currentHash = ComputeHash(record.File);
-            Log.LogMessage(MessageImportance.High, string.Format(" ** xxHash (XXH64) [current]: {0:X8}", currentHash));            
+            Log.LogMessage(MessageImportance.Low, string.Format(" ** xxHash (XXH64) [current]: {0:X8}", currentHash));            
 
             if (currentHash != record.Hash)
             {
-                Log.LogMessage(MessageImportance.High, " ** Hash value changed. Updating the record.");
+                Log.LogMessage(MessageImportance.Normal, " ** Hash value changed. Updating the record.");
                 record.Hash = currentHash;
                 record.LastWriteTimeUtc = currentLastWriteTimeUtc;
                 return true;
             }
             else
             {
-                Log.LogMessage(MessageImportance.High, " ** Hash value not changed. Rewinding last write time.");
+                Log.LogMessage(MessageImportance.Normal, " ** Hash value not changed. Rewinding last write time.");
                 File.SetLastWriteTimeUtc(record.File, DateTime.FromFileTimeUtc(record.LastWriteTimeUtc));
                 return false;
             }
@@ -111,7 +111,7 @@ namespace HashingMSBuild
 
             if (count > 0)
             {
-                Log.LogMessage(MessageImportance.High, $"Added {count} new file record(s).");
+                Log.LogMessage(MessageImportance.Normal, $"Added {count} new file record(s).");
             }
         }
 
