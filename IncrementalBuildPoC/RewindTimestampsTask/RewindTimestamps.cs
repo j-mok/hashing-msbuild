@@ -23,6 +23,11 @@ namespace HashingMSBuild
             public long Hash { get; set; }
         }
 
+        [Required]
+        public ITaskItem[] SourceFiles { get; set; }
+
+        public string DatabasePath { get; set; }
+
         private xxHash hasher = new xxHash(hashSize: 64);
 
         public override bool Execute()
@@ -52,10 +57,25 @@ namespace HashingMSBuild
                         continue;
                     }
 
-                    bool recordUpdated = CheckFileTimestamp(currentSourceFiles[record.File], record);
-                    if (recordUpdated)
+                    if (!File.Exists(record.File))
                     {
-                        storedFiles.Update(record);
+                        Log.LogMessage(MessageImportance.Low, $"File {record.File} does not exist - it will not a have a timestamp record in the database.");
+                        continue;
+                    }
+
+                    try
+                    {
+                        bool recordUpdated = CheckFileTimestamp(currentSourceFiles[record.File], record);
+                        if (recordUpdated)
+                        {
+                            storedFiles.Update(record);
+                        }
+                    }
+                    catch (IOException exc)
+                    {
+                        Log.LogErrorFromException(exc);
+                        Log.LogMessage(MessageImportance.Low, $"Deleting a record for {record.File} because an I/O error during record updating.");
+                        storedFiles.Delete(record.Id);
                     }
 
                     currentSourceFiles.Remove(record.File);
@@ -80,7 +100,7 @@ namespace HashingMSBuild
             }
 
             var currentHash = ComputeHash(record.File);
-            Log.LogMessage(MessageImportance.Low, string.Format(" ** xxHash (XXH64) [current]: {0:X8}", currentHash));            
+            Log.LogMessage(MessageImportance.Low, string.Format(" ** xxHash (XXH64) [current]: {0:X8}", currentHash));
 
             if (currentHash != record.Hash)
             {
@@ -99,15 +119,7 @@ namespace HashingMSBuild
 
         private void AddNewFileRecords(Dictionary<string, DateTime> newSourceFiles, LiteCollection<SourceFileRecord> storedFiles)
         {
-            int count = storedFiles.Insert(from entry in newSourceFiles
-                                           let newFile = entry.Key
-                                           let newFileTimestamp = entry.Value.ToFileTimeUtc()
-                                           select new SourceFileRecord
-                                           {
-                                               File = newFile,
-                                               LastWriteTimeUtc = newFileTimestamp,
-                                               Hash = ComputeHash(newFile)
-                                           });
+            int count = storedFiles.Insert(SafeCreateRecords(newSourceFiles));
 
             if (count > 0)
             {
@@ -115,9 +127,40 @@ namespace HashingMSBuild
             }
         }
 
+        private IEnumerable<SourceFileRecord> SafeCreateRecords(Dictionary<string, DateTime> sourceFiles)
+        {
+            foreach (var entry in sourceFiles)
+            {
+                if (!File.Exists(entry.Key))
+                {
+                    Log.LogMessage(MessageImportance.Low, $"File {entry.Key} does not exist - it will not a have a timestamp record in the database.");
+                    continue;
+                }
+
+                SourceFileRecord record;
+                try
+                {
+                    record = new SourceFileRecord
+                    {
+                        File = entry.Key,
+                        LastWriteTimeUtc = entry.Value.ToFileTimeUtc(),
+                        Hash = ComputeHash(entry.Key)
+                    };                    
+                }
+                catch (IOException exc)
+                {
+                    Log.LogErrorFromException(exc);
+                    Log.LogMessage(MessageImportance.Low, $"Could not create a record for {entry.Key} because of an I/O error.");
+                    continue;
+                }
+
+                yield return record;
+            }
+        }
+
         private string GetDatabasePath()
         {
-            return Path.ChangeExtension(BuildEngine.ProjectFileOfTaskNode, "hashdb");
+            return DatabasePath ?? Path.ChangeExtension(BuildEngine.ProjectFileOfTaskNode, "hashdb");
         }
 
         private long ComputeHash(string file)
@@ -128,8 +171,5 @@ namespace HashingMSBuild
                 return BitConverter.ToInt64(hash, 0);
             }
         }
-
-        [Required]
-        public ITaskItem[] SourceFiles { get; set; }
     }
 }
