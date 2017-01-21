@@ -4,6 +4,7 @@ using Microsoft.Build.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Data.HashFunction;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using TPL=System.Threading.Tasks;
@@ -33,8 +34,12 @@ namespace HashingMSBuild
 
         public override bool Execute()
         {
+            var sw = Stopwatch.StartNew();
             var currentSourceFiles = SourceFiles.ToDictionary(item => item.ItemSpec, item => File.GetLastWriteTimeUtc(item.ItemSpec));
             ProcessSourceFiles(currentSourceFiles);
+
+            sw.Stop();
+            Log.LogMessage(MessageImportance.High, $"Timestamp database update took: {sw.Elapsed}");
 
             return true;
         }
@@ -132,6 +137,8 @@ namespace HashingMSBuild
         {
             foreach (var entry in sourceFiles)
             {
+                Log.LogMessage(MessageImportance.Low, $"Creating a timestamp record for file {entry.Key}");
+
                 if (!File.Exists(entry.Key))
                 {
                     Log.LogMessage(MessageImportance.Low, $"File {entry.Key} does not exist - it will not a have a timestamp record in the database.");
