@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Data.HashFunction;
 using System.IO;
 using System.Linq;
+using TPL=System.Threading.Tasks;
 
 namespace HashingMSBuild
 {
@@ -48,19 +49,19 @@ namespace HashingMSBuild
                 var storedFiles = db.GetCollection<SourceFileRecord>("files");
 
                 Log.LogMessage(MessageImportance.Low, $"Looking for updated time stamps...");
-                foreach (var record in storedFiles.FindAll())
+                TPL.Parallel.ForEach(storedFiles.FindAll(), record =>
                 {
                     if (!currentSourceFiles.ContainsKey(record.File))
                     {
                         Log.LogMessage(MessageImportance.Low, $"Deleting the record associated with a no longer existing file {record.File}");
                         storedFiles.Delete(record.Id);
-                        continue;
+                        return;
                     }
 
                     if (!File.Exists(record.File))
                     {
                         Log.LogMessage(MessageImportance.Low, $"File {record.File} does not exist - it will not a have a timestamp record in the database.");
-                        continue;
+                        return;
                     }
 
                     try
@@ -79,7 +80,7 @@ namespace HashingMSBuild
                     }
 
                     currentSourceFiles.Remove(record.File);
-                }
+                });
 
                 AddNewFileRecords(currentSourceFiles, storedFiles);
             }
