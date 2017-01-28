@@ -39,7 +39,7 @@ namespace HashingMSBuild
             ProcessSourceFiles(currentSourceFiles);
 
             sw.Stop();
-            Log.LogMessage(MessageImportance.High, $"Timestamp database update took: {sw.Elapsed}");
+            Log.LogMessage($"Timestamp database update took: {sw.Elapsed}");
 
             return true;
         }
