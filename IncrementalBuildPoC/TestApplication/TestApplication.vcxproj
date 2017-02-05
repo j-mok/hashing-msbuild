@@ -90,6 +90,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ForcedIncludeFiles>stdafx.h</ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -114,6 +115,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ForcedIncludeFiles>stdafx.h</ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -152,6 +154,78 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="test1.cpp" />
+    <ClCompile Include="test10.cpp" />
+    <ClCompile Include="test11.cpp" />
+    <ClCompile Include="test12.cpp" />
+    <ClCompile Include="test13.cpp" />
+    <ClCompile Include="test14.cpp" />
+    <ClCompile Include="test15.cpp" />
+    <ClCompile Include="test16.cpp" />
+    <ClCompile Include="test17.cpp" />
+    <ClCompile Include="test18.cpp" />
+    <ClCompile Include="test19.cpp" />
+    <ClCompile Include="test2.cpp" />
+    <ClCompile Include="test20.cpp" />
+    <ClCompile Include="test21.cpp" />
+    <ClCompile Include="test22.cpp" />
+    <ClCompile Include="test23.cpp" />
+    <ClCompile Include="test24.cpp" />
+    <ClCompile Include="test25.cpp" />
+    <ClCompile Include="test26.cpp" />
+    <ClCompile Include="test27.cpp" />
+    <ClCompile Include="test28.cpp" />
+    <ClCompile Include="test29.cpp" />
+    <ClCompile Include="test3.cpp" />
+    <ClCompile Include="test30.cpp" />
+    <ClCompile Include="test31.cpp" />
+    <ClCompile Include="test32.cpp" />
+    <ClCompile Include="test33.cpp" />
+    <ClCompile Include="test34.cpp" />
+    <ClCompile Include="test35.cpp" />
+    <ClCompile Include="test36.cpp" />
+    <ClCompile Include="test37.cpp" />
+    <ClCompile Include="test38.cpp" />
+    <ClCompile Include="test39.cpp" />
+    <ClCompile Include="test4.cpp" />
+    <ClCompile Include="test40.cpp" />
+    <ClCompile Include="test41.cpp" />
+    <ClCompile Include="test42.cpp" />
+    <ClCompile Include="test43.cpp" />
+    <ClCompile Include="test44.cpp" />
+    <ClCompile Include="test45.cpp" />
+    <ClCompile Include="test46.cpp" />
+    <ClCompile Include="test47.cpp" />
+    <ClCompile Include="test48.cpp" />
+    <ClCompile Include="test49.cpp" />
+    <ClCompile Include="test5.cpp" />
+    <ClCompile Include="test50.cpp" />
+    <ClCompile Include="test51.cpp" />
+    <ClCompile Include="test52.cpp" />
+    <ClCompile Include="test53.cpp" />
+    <ClCompile Include="test54.cpp" />
+    <ClCompile Include="test55.cpp" />
+    <ClCompile Include="test56.cpp" />
+    <ClCompile Include="test57.cpp" />
+    <ClCompile Include="test58.cpp" />
+    <ClCompile Include="test59.cpp" />
+    <ClCompile Include="test6.cpp" />
+    <ClCompile Include="test60.cpp" />
+    <ClCompile Include="test61.cpp" />
+    <ClCompile Include="test62.cpp" />
+    <ClCompile Include="test63.cpp" />
+    <ClCompile Include="test64.cpp" />
+    <ClCompile Include="test65.cpp" />
+    <ClCompile Include="test66.cpp" />
+    <ClCompile Include="test67.cpp" />
+    <ClCompile Include="test68.cpp" />
+    <ClCompile Include="test69.cpp" />
+    <ClCompile Include="test7.cpp" />
+    <ClCompile Include="test70.cpp" />
+    <ClCompile Include="test71.cpp" />
+    <ClCompile Include="test72.cpp" />
+    <ClCompile Include="test8.cpp" />
+    <ClCompile Include="test9.cpp" />
     <ClCompile Include="TestApplication.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -160,8 +234,5 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
-   <ItemGroup>
-        <SourceFiles Include="@(ClInclude)" />
-    </ItemGroup>
-  <Import Project="..\packages\HashBasedIncrementalBuild.MSBuild.1.0.0-alpha3\build\native\HashBasedIncrementalBuild.MSBuild.targets" />
+  <Import Project="$(SolutionDir)packages\HashBasedIncrementalBuild.MSBuild.1.0.0-alpha9\build\native\HashBasedIncrementalBuild.MSBuild.targets" />
 </Project>
