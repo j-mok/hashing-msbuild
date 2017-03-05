@@ -74,6 +74,7 @@ namespace HashingMSBuild
                         }
                         else
                         {
+                            record.Id = 0;
                             records.Insert(record);
                         }
                     }
@@ -83,6 +84,7 @@ namespace HashingMSBuild
                 TPL.Parallel.ForEach(pendingHashUpdates, record =>
                 {
                     UpdateHashOrRewindTimestamp(record);
+                    record.Id = 0;
                 });
                 records.Insert(pendingHashUpdates.Where(r => r.File != null));
             }
