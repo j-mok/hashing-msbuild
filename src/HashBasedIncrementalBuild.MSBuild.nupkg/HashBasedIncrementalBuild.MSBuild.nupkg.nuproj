@@ -1,0 +1,80 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <Import Project="$(NuGetAuthoringPath)\NuGet.Packaging.Authoring.props" Condition="Exists('$(NuGetAuthoringPath)\NuGet.Packaging.Authoring.props')" />
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|AnyCPU">
+      <Configuration>Debug</Configuration>
+      <Platform>AnyCPU</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|AnyCPU">
+      <Configuration>Release</Configuration>
+      <Platform>AnyCPU</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Configuration">
+    <PackageId>HashBasedIncrementalBuild.MSBuild</PackageId>
+    <PackageVersion Condition="'$(PackageVersion)' == ''">1.0.0-beta02</PackageVersion>
+    <Title>Hash-based Incremental Building in MSBuild</Title>
+    <Authors>Jacek Mokrzycki</Authors>
+    <Owners>j-mok</Owners>
+    <Summary>Offers improved performance of MSBuild's incremental builds by monitoring source files' hash values and preventing unnecessary re-compilation of source files.</Summary>
+    <Description>By installing this package you can easily incorporate the HashingMSBuild.RewindTimestamps task in the build process of your Visual C++ projects. RewindTimestamps calculates and stores hash values and last modified dates of source files (i.e. header and cpp files). On subseqent builds, source files with updated timestamps are "rewinded" back to the original timestamps if their hash values haven't changed, thus preventing their re-compilation.</Description>
+    <PackageReleaseNotes>Initial beta release.</PackageReleaseNotes>
+    <PackageProjectUrl>https://github.com/j-mok/hashing-msbuild/tree/master/IncrementalBuildPoC/RewindTimestampsTask</PackageProjectUrl>
+    <PackageLicenseUrl>https://github.com/j-mok/hashing-msbuild/blob/master/LICENSE</PackageLicenseUrl>
+    <Copyright>Copyright ©2017 Jacek Mokrzycki</Copyright>
+    <PackageTags> msbuild cpp native vc incremental build </PackageTags>
+    <IsDevelopmentDependency>true</IsDevelopmentDependency>
+    <GenerateSymbolPackage>true</GenerateSymbolPackage>
+    <EmbedSourceFiles>true</EmbedSourceFiles>
+  </PropertyGroup>
+  <PropertyGroup Label="Globals">
+    <OutputPath>bin\$(Configuration)\</OutputPath>
+    <ProjectGuid>adc80d5d-305e-4a08-b143-a13d62f4c5e4</ProjectGuid>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="..\RewindTimestampsTask\bin\Release\LiteDB.dll">
+      <Link>build\LiteDB.dll</Link>
+      <IncludeInPackage>true</IncludeInPackage>
+    </None>
+    <None Include="build\native\HashBasedIncrementalBuild.MSBuild.targets">
+      <IncludeInPackage>true</IncludeInPackage>
+    </None>
+    <None Include="Readme.txt">
+      <IncludeInPackage>true</IncludeInPackage>
+    </None>
+    <None Include="..\RewindTimestampsTask\bin\Release\RewindTimestampsTask.dll">
+      <Link>build\RewindTimestampsTask.dll</Link>
+      <IncludeInPackage>true</IncludeInPackage>
+    </None>
+    <None Include="..\RewindTimestampsTask\bin\Release\System.Data.HashFunction.Core.dll">
+      <Link>build\System.Data.HashFunction.Core.dll</Link>
+      <IncludeInPackage>true</IncludeInPackage>
+    </None>
+    <None Include="..\RewindTimestampsTask\bin\Release\System.Data.HashFunction.Interfaces.dll">
+      <Link>build\System.Data.HashFunction.Interfaces.dll</Link>
+      <IncludeInPackage>true</IncludeInPackage>
+    </None>
+    <None Include="..\RewindTimestampsTask\bin\Release\System.Data.HashFunction.xxHash.dll">
+      <Link>build\System.Data.HashFunction.xxHash.dll</Link>
+      <IncludeInPackage>true</IncludeInPackage>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="NuGet.Build.Packaging">
+      <Version>0.1.231</Version>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="LiteDB LICENSE.txt">
+      <IncludeInPackage>true</IncludeInPackage>
+    </None>
+    <None Include="xxHash LICENSE.txt">
+      <IncludeInPackage>true</IncludeInPackage>
+    </None>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" />
+  <Import Project="$(NuGetAuthoringPath)\NuGet.Packaging.Authoring.targets" Condition="Exists('$(NuGetAuthoringPath)\NuGet.Packaging.Authoring.targets')" />
+</Project>
